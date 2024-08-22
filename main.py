@@ -1,3 +1,6 @@
+import schedule
+import time
+
 import yfinance as yf
 import ta
 import smtplib
@@ -82,3 +85,22 @@ def scan_stocks():
         if current_rsi <= 40 and current_rsi > previous_rsi:
             send_email(stock)
             print(f"Alert sent for {stock}")
+
+
+scan_stocks()
+
+# Schedule tasks
+schedule.every().monday.at("09:30").do(scan_stocks)
+schedule.every().monday.at("15:00").do(scan_stocks)
+schedule.every().tuesday.at("09:30").do(scan_stocks)
+schedule.every().tuesday.at("15:00").do(scan_stocks)
+schedule.every().wednesday.at("09:30").do(scan_stocks)
+schedule.every().wednesday.at("15:00").do(scan_stocks)
+schedule.every().thursday.at("09:30").do(scan_stocks)
+schedule.every().thursday.at("15:00").do(scan_stocks)
+schedule.every().friday.at("09:30").do(scan_stocks)
+schedule.every().friday.at("15:00").do(scan_stocks)
+
+while True:
+    schedule.run_pending()
+    time.sleep(60)  # Wait a minute before checking again
