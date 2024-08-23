@@ -1,3 +1,5 @@
+import threading
+
 import schedule
 import time
 import logging
@@ -14,8 +16,8 @@ from email.mime.base import MIMEBase
 from email import encoders
 import pandas as pd
 
-import http.server
 import socketserver
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Configure logging
 logging.basicConfig(filename='stock_alerts.log', 
@@ -26,6 +28,11 @@ key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
 json_file_path = "./.credentials.json"
 
+# Define the port to listen on (port 80)
+PORT = 80
+
+alerts = []
+gmailAppPassword = ""
 try:
     with open(json_file_path, 'r') as file:
         config = json.load(file)
@@ -36,6 +43,12 @@ except json.JSONDecodeError:
     print(f"Error decoding JSON from the file {json_file_path}.")
 
 print("Mail Creds: ", gmailAppPassword)
+
+# Function to add alert
+def add_alert(stock, current_rsi, previous_rsi):
+    alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
+    alerts.append(alert_message)
+
 
 
 # Function to calculate RSI
@@ -85,6 +98,20 @@ nifty_100_stocks = [
     "VEDL", "WIPRO", "ZOMATO", "ZYDUSLIFE"
 ]
 
+rsi_data = {}
+
+# File paths
+alert_log_file = 'stock_alerts.log'
+
+# Function to read alerts from file
+def read_alerts_from_file():
+    try:
+        with open(alert_log_file, 'r') as file:
+            oldAlerts = file.readlines()
+    except FileNotFoundError:
+        oldAlerts = []
+    return oldAlerts
+
 # Fetch stock data and check RSI condition
 def scan_stocks():
     # #: Retrieve data at daily intervals.
@@ -96,8 +123,6 @@ def scan_stocks():
     # #: Retrieve data at montly intervals.
     # MONTHLY = "1mo"
     
-    rsi_data = {}
-
     for stock in nifty_100_stocks:
         data = yf.download(stock+".NS", period="2y", interval="1wk")
 
@@ -117,50 +142,122 @@ def scan_stocks():
 
         if current_rsi <= 40 and current_rsi > previous_rsi:
             alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
-            send_email(stock)
             print(alert_message)
             logging.info(alert_message)
+            add_alert(stock, current_rsi, previous_rsi)
+            send_email(stock)
     return rsi_data
 
-
-# Define the handler to process the incoming HTTP requests
-class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+# Define the HTTP request handler
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Set the response status code to 200 (OK)
-        self.send_response(200)
+        if self.path == '/alerts':
+            # Read alert messages from file
+            oldAlerts = read_alerts_from_file()
+            
+            # Convert alerts to HTML table
+            alert_rows = [f"<tr><td>{alert.strip()}</td></tr>" for alert in oldAlerts]
+            alerts_table_html = """
+            <html>
+            <body>
+            <h1>Alerts</h1>
+            <table border="1">
+            <tr><th>Alert Message</th></tr>
+            {}
+            </table>
+            </body>
+            </html>
+            """.format(''.join(alert_rows))
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.end_headers()
+            self.wfile.write(alerts_table_html.encode('utf-8'))
+        else:
+            # Convert RSI data dictionary to HTML table with conditional formatting
+            table_rows = []
+            for stock, data in rsi_data.items():
+                # Determine the color for Current RSI
+                if data['current_rsi'] < 40:
+                    color = 'red'
+                elif data['current_rsi'] > 60:
+                    color = 'green'
+                else:
+                    color = 'black'  # Default color
 
-        # Set the headers
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        
-        # Send the response message
-        self.wfile.write(bytes("<html><body><h1>", rsi_data, "</h1></body></html>", "utf-8"))
+                row = f"<tr><td>{stock}</td><td style='color: {color};'>{data['current_rsi']}</td><td>{data['previous_rsi']}</td></tr>"
+                table_rows.append(row)
+            
+            table_html = """
+            <html>
+            <body>
+            <h1>RSI Data</h1>
+            <h2><a href="/alerts">Show Old Alerts</a></h2>
+            <table border="1">
+            <tr><th>Stock</th><th>Current RSI</th><th>Previous RSI</th></tr>
+            {}
+            </table>
+            </body>
+            </html>
+            """.format(''.join(table_rows))
+             
+            # Convert alerts list to HTML table
+            alert_rows = [f"<tr><td>{alert}</td></tr>" for alert in alerts]
+            alerts_table_html = """
+            <h1>Alerts</h1>
+            <table border="1">
+            <tr><th>Alert Message</th></tr>
+            {}
+            </table>
+            </body>
+            </html>
+            """.format(''.join(alert_rows))
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.end_headers()
+            self.wfile.write(table_html.encode('utf-8'))
 
-# Define the port to listen on (port 80)
-PORT = 80
+# Function to start the HTTP server
+def start_server():
+    server_address = ('', PORT)
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    print("Starting server at port ",PORT,"...")
+    httpd.serve_forever()
 
-# Create a TCP server that listens on the specified port
-with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
-    print(f"Serving on port {PORT}")
-    
-    scan_stocks()
 
-    # Schedule tasks
-    # schedule.every(10).seconds.do(scan_stocks)
-    schedule.every().monday.at("09:30").do(scan_stocks)
-    schedule.every().monday.at("15:00").do(scan_stocks)
-    schedule.every().tuesday.at("09:30").do(scan_stocks)
-    schedule.every().tuesday.at("15:00").do(scan_stocks)
-    schedule.every().wednesday.at("09:30").do(scan_stocks)
-    schedule.every().wednesday.at("15:00").do(scan_stocks)
-    schedule.every().thursday.at("09:30").do(scan_stocks)
-    schedule.every().thursday.at("15:00").do(scan_stocks)
-    schedule.every().friday.at("09:30").do(scan_stocks)
-    schedule.every().friday.at("15:00").do(scan_stocks)
+# Schedule tasks
+# schedule.every(10).seconds.do(scan_stocks)
+schedule.every().monday.at("09:30").do(scan_stocks)
+schedule.every().monday.at("15:00").do(scan_stocks)
+schedule.every().tuesday.at("09:30").do(scan_stocks)
+schedule.every().tuesday.at("15:00").do(scan_stocks)
+schedule.every().wednesday.at("09:30").do(scan_stocks)
+schedule.every().wednesday.at("15:00").do(scan_stocks)
+schedule.every().thursday.at("09:30").do(scan_stocks)
+schedule.every().thursday.at("15:00").do(scan_stocks)
+schedule.every().friday.at("09:30").do(scan_stocks)
+schedule.every().friday.at("15:00").do(scan_stocks)
 
+# Function to handle the scheduled tasks
+def run_scheduled_tasks():
     while True:
         schedule.run_pending()
-        time.sleep(1800)  # Wait a minute before checking again
+        time.sleep(60)  # Wait a minute before checking again
 
-    # Keep the server running
-    httpd.serve_forever()
+
+# Main
+if __name__ == "__main__":
+    # Create and start threads
+    server_thread = threading.Thread(target=start_server)
+    scheduler_thread = threading.Thread(target=scan_stocks)
+    
+    server_thread.start()
+    scheduler_thread.start()
+    
+    # Wait for threads to complete
+    server_thread.join()
+    scheduler_thread.join()
+
