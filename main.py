@@ -132,8 +132,6 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Set the headers
         self.send_header("Content-type", "text/html")
         self.end_headers()
-
-        rsi_data = scan_stocks(nifty_100_stocks)
         
         # Send the response message
         self.wfile.write(bytes("<html><body><h1>", rsi_data, "</h1></body></html>", "utf-8"))
@@ -162,7 +160,7 @@ with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
 
     while True:
         schedule.run_pending()
-        # time.sleep(60)  # Wait a minute before checking again
+        time.sleep(1800)  # Wait a minute before checking again
 
     # Keep the server running
     httpd.serve_forever()
