@@ -28,31 +28,31 @@ except json.JSONDecodeError:
 
 print(gmailAppPassword)
 
-# import http.server
-# import socketserver
+import http.server
+import socketserver
 
-# # Define the handler to process the incoming HTTP requests
-# class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
-#     def do_GET(self):
-#         # Set the response status code to 200 (OK)
-#         self.send_response(200)
+# Define the handler to process the incoming HTTP requests
+class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        # Set the response status code to 200 (OK)
+        self.send_response(200)
 
-#         # Set the headers
-#         self.send_header("Content-type", "text/html")
-#         self.end_headers()
+        # Set the headers
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
 
-#         # Send the response message
-#         self.wfile.write(bytes("<html><body><h1>Hello, World!</h1></body></html>", "utf-8"))
+        # Send the response message
+        self.wfile.write(bytes("<html><body><h1>Hello, World!</h1></body></html>", "utf-8"))
 
-# # Define the port to listen on (port 80)
-# PORT = 80
+# Define the port to listen on (port 80)
+PORT = 80
 
-# # Create a TCP server that listens on the specified port
-# with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
-#     print(f"Serving on port {PORT}")
+# Create a TCP server that listens on the specified port
+with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
+    print(f"Serving on port {PORT}")
     
-#     # Keep the server running
-#     httpd.serve_forever()
+    # Keep the server running
+    httpd.serve_forever()
 
 # Function to calculate RSI
 def calculate_rsi(data, window=14):
