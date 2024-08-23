@@ -157,68 +157,299 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             
             # Convert alerts to HTML table
             alert_rows = [f"<tr><td>{alert.strip()}</td></tr>" for alert in oldAlerts]
-            alerts_table_html = """
-            <html>
-            <body>
-            <h1>Alerts</h1>
-            <table border="1">
-            <tr><th>Alert Message</th></tr>
-            {}
-            </table>
-            </body>
-            </html>
-            """.format(''.join(alert_rows))
-            
+            alert_html = """
+                <html>
+                <head>
+                    <title>RSI Alerts</title>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                        }}
+                        h1 {{
+                            color: #333;
+                        }}
+                        h2 a {{
+                            color: #0066cc;
+                            text-decoration: none;
+                        }}
+                        h2 a:hover {{
+                            text-decoration: underline;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 20px;
+                        }}
+                        th, td {{
+                            padding: 10px;
+                            text-align: left;
+                            border: 1px solid #ddd;
+                        }}
+                        th {{
+                            background-color: #f2f2f2;
+                            cursor: pointer;
+                        }}
+                        th.sort-asc::after {{
+                            content: " \\25B2"; /* Up arrow */
+                        }}
+                        th.sort-desc::after {{
+                            content: " \\25BC"; /* Down arrow */
+                        }}
+                        tr:nth-child(even) {{
+                            background-color: #f9f9f9;
+                        }}
+                        tr:hover {{
+                            background-color: #f1f1f1;
+                        }}
+                        .alert {{
+                            color: #d9534f; /* Red color for alerts */
+                        }}
+                    </style>
+                    <script>
+                        function sortTable() {{
+                            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+                            table = document.getElementById("rsiTable");
+                            switching = true;
+                            dir = "asc"; 
+                            while (switching) {{
+                                switching = false;
+                                rows = table.rows;
+                                for (i = 1; i < (rows.length - 1); i++) {{
+                                    shouldSwitch = false;
+                                    x = rows[i].getElementsByTagName("TD")[0];
+                                    y = rows[i + 1].getElementsByTagName("TD")[0];
+                                    if (dir == "asc") {{
+                                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {{
+                                            shouldSwitch = true;
+                                            break;
+                                        }}
+                                    }} else if (dir == "desc") {{
+                                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {{
+                                            shouldSwitch = true;
+                                            break;
+                                        }}
+                                    }}
+                                }}
+                                if (shouldSwitch) {{
+                                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                                    switching = true;
+                                    switchcount++;
+                                }} else {{
+                                    if (switchcount == 0 && dir == "asc") {{
+                                        dir = "desc";
+                                        switching = true;
+                                    }}
+                                }}
+                            }}
+                            updateSortArrows(dir);
+                        }}
+                        
+                        function updateSortArrows(direction) {{
+                            var thElement = document.getElementById("alertHeader");
+                            thElement.classList.remove("sort-asc", "sort-desc");
+                            if (direction === "asc") {{
+                                thElement.classList.add("sort-asc");
+                            }} else {{
+                                thElement.classList.add("sort-desc");
+                            }}
+                        }}
+                    </script>
+                </head>
+                <body>
+                    <h1>Alerts Triggered by Weekly RSI Below 40 (All Triggered Alerts)</h1>
+                    <h2><a href="/">Show Weekly RSI Data</a></h2>
+                    <table id="rsiTable">
+                        <thead>
+                            <tr>
+                                <th id="alertHeader" onclick="sortTable()">Alert Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+                """.format(''.join(alert_rows))
+
             # Send response
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
-            self.wfile.write(alerts_table_html.encode('utf-8'))
+            self.wfile.write(alert_html.encode('utf-8'))
         else:
             # Convert RSI data dictionary to HTML table with conditional formatting
             table_rows = []
             for stock, data in rsi_data.items():
                 # Determine the color for Current RSI
                 if data['current_rsi'] < 40:
-                    color = 'red'
+                    color = '#FF7F7F'
                 elif data['current_rsi'] > 60:
-                    color = 'green'
+                    color = '#D1FFBD'
                 else:
-                    color = 'black'  # Default color
+                    color = 'white'  # Default color
 
-                row = f"<tr><td>{stock}</td><td style='color: {color};'>{data['current_rsi']}</td><td>{data['previous_rsi']}</td></tr>"
+                row = f"<tr><td>{stock}</td><td style='background-color: {color};'>{data['current_rsi']}</td><td>{data['previous_rsi']}</td></tr>"
                 table_rows.append(row)
-            
-            table_html = """
-            <html>
-            <body>
-            <h1>RSI Data</h1>
-            <h2><a href="/alerts">Show Old Alerts</a></h2>
-            <table border="1">
-            <tr><th>Stock</th><th>Current RSI</th><th>Previous RSI</th></tr>
-            {}
-            </table>
-            </body>
-            </html>
-            """.format(''.join(table_rows))
              
             # Convert alerts list to HTML table
             alert_rows = [f"<tr><td>{alert}</td></tr>" for alert in alerts]
-            alerts_table_html = """
-            <h1>Alerts</h1>
-            <table border="1">
-            <tr><th>Alert Message</th></tr>
-            {}
-            </table>
+            
+            combined_html = """
+            <html>
+            <head>
+                <title>Weekly RSI Data and Alerts</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        margin: 20px;
+                    }}
+                    h1 {{
+                        color: #333;
+                    }}
+                    h2 a {{
+                        color: #0066cc;
+                        text-decoration: none;
+                    }}
+                    h2 a:hover {{
+                        text-decoration: underline;
+                    }}
+                    .container {{
+                        display: flex;
+                        justify-content: space-between;
+                    }}
+                    .table-container {{
+                        width: 48%;
+                    }}
+                    table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 20px;
+                    }}
+                    th, td {{
+                        padding: 10px;
+                        text-align: left;
+                        border: 1px solid #ddd;
+                    }}
+                    th {{
+                        background-color: #f2f2f2;
+                        cursor: pointer;
+                    }}
+                    th.sort-asc::after {{
+                        content: " \\25B2"; /* Up arrow */
+                    }}
+                    th.sort-desc::after {{
+                        content: " \\25BC"; /* Down arrow */
+                    }}
+                    tr:nth-child(even) {{
+                        background-color: #f9f9f9;
+                    }}
+                    tr:hover {{
+                        background-color: #f1f1f1;
+                    }}
+                    .alert {{
+                        color: #d9534f; /* Red color for alerts */
+                    }}
+                </style>
+                <script>
+                    function sortTable(n) {{
+                        var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+                        table = document.getElementById("rsiTable");
+                        switching = true;
+                        dir = "asc"; 
+                        while (switching) {{
+                            switching = false;
+                            rows = table.rows;
+                            for (i = 1; i < (rows.length - 1); i++) {{
+                                shouldSwitch = false;
+                                x = rows[i].getElementsByTagName("TD")[n];
+                                y = rows[i + 1].getElementsByTagName("TD")[n];
+                                if (dir == "asc") {{
+                                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {{
+                                        shouldSwitch = true;
+                                        break;
+                                    }}
+                                }} else if (dir == "desc") {{
+                                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {{
+                                        shouldSwitch = true;
+                                        break;
+                                    }}
+                                }}
+                            }}
+                            if (shouldSwitch) {{
+                                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                                switching = true;
+                                switchcount++;
+                            }} else {{
+                                if (switchcount == 0 && dir == "asc") {{
+                                    dir = "desc";
+                                    switching = true;
+                                }}
+                            }}
+                        }}
+                        updateSortArrows(dir, n);
+                    }}
+                    
+                    function updateSortArrows(direction, column) {{
+                        var thElements = document.getElementsByTagName("th");
+                        for (var i = 0; i < thElements.length; i++) {{
+                            thElements[i].classList.remove("sort-asc", "sort-desc");
+                        }}
+                        var thElement = thElements[column];
+                        if (direction === "asc") {{
+                            thElement.classList.add("sort-asc");
+                        }} else {{
+                            thElement.classList.add("sort-desc");
+                        }}
+                    }}
+                </script>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="table-container">
+                        <h1>Weekly RSI Data</h1>
+                        <h2><a href="/alerts">Show Old Alerts</a></h2>
+                        <table id="rsiTable">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0)">Stock</th>
+                                    <th onclick="sortTable(1)">Current Week RSI</th>
+                                    <th onclick="sortTable(2)">Previous Week RSI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-container">
+                        <h1>Alerts Triggered by Weekly RSI Below 40 (While Running Script)</h1>
+                        <table id="alertsTable">
+                            <thead>
+                                <tr>
+                                    <th>Alert Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </body>
             </html>
-            """.format(''.join(alert_rows))
-            
+            """.format(''.join(table_rows), ''.join(alert_rows))
+
+
+
+
+
             # Send response
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
-            self.wfile.write(table_html.encode('utf-8'))
+            self.wfile.write(combined_html.encode('utf-8'))
 
 # Function to start the HTTP server
 def start_server():
