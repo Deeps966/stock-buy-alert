@@ -1,5 +1,6 @@
 import schedule
 import time
+import logging
 
 import os
 import json
@@ -13,6 +14,14 @@ from email.mime.base import MIMEBase
 from email import encoders
 import pandas as pd
 
+import http.server
+import socketserver
+
+# Configure logging
+logging.basicConfig(filename='stock_alerts.log', 
+                    level=logging.INFO, 
+                    format='%(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
 key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
 json_file_path = "./.credentials.json"
@@ -26,33 +35,8 @@ except FileNotFoundError:
 except json.JSONDecodeError:
     print(f"Error decoding JSON from the file {json_file_path}.")
 
-print(gmailAppPassword)
+print("Mail Creds: ", gmailAppPassword)
 
-import http.server
-import socketserver
-
-# Define the handler to process the incoming HTTP requests
-class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        # Set the response status code to 200 (OK)
-        self.send_response(200)
-
-        # Set the headers
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-
-        # Send the response message
-        self.wfile.write(bytes("<html><body><h1>Hello, World!</h1></body></html>", "utf-8"))
-
-# Define the port to listen on (port 80)
-PORT = 80
-
-# Create a TCP server that listens on the specified port
-with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
-    print(f"Serving on port {PORT}")
-    
-    # Keep the server running
-    httpd.serve_forever()
 
 # Function to calculate RSI
 def calculate_rsi(data, window=14):
@@ -101,19 +85,19 @@ nifty_100_stocks = [
     "VEDL", "WIPRO", "ZOMATO", "ZYDUSLIFE"
 ]
 
-
-# #: Retrieve data at daily intervals.
-# DAILY = "1d"
-
-# #: Retrieve data at weekly intervals.
-# WEEKLY = "1wk"
-
-# #: Retrieve data at montly intervals.
-# MONTHLY = "1mo"
-
-
 # Fetch stock data and check RSI condition
 def scan_stocks():
+    # #: Retrieve data at daily intervals.
+    # DAILY = "1d"
+
+    # #: Retrieve data at weekly intervals.
+    # WEEKLY = "1wk"
+
+    # #: Retrieve data at montly intervals.
+    # MONTHLY = "1mo"
+    
+    rsi_data = {}
+
     for stock in nifty_100_stocks:
         data = yf.download(stock+".NS", period="2y", interval="1wk")
 
@@ -124,29 +108,61 @@ def scan_stocks():
         current_rsi = data['RSI'].iloc[-1]
         previous_rsi = data['RSI'].iloc[-2]
 
+        rsi_data[stock] = {
+            "current_rsi": current_rsi,
+            "previous_rsi": previous_rsi
+        }
+
         print( stock, " || Current RSI: ", current_rsi, " || Previous RSI: " , previous_rsi, "\n")
 
         if current_rsi <= 40 and current_rsi > previous_rsi:
+            alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
             send_email(stock)
-            print(f"Alert sent for {stock}")
+            print(alert_message)
+            logging.info(alert_message)
+    return rsi_data
 
 
-scan_stocks()
+# Define the handler to process the incoming HTTP requests
+class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        # Set the response status code to 200 (OK)
+        self.send_response(200)
 
-# Schedule tasks
-schedule.every().monday.at("09:30").do(scan_stocks)
-schedule.every().monday.at("15:00").do(scan_stocks)
-schedule.every().tuesday.at("09:30").do(scan_stocks)
-schedule.every().tuesday.at("15:00").do(scan_stocks)
-schedule.every().wednesday.at("09:30").do(scan_stocks)
-schedule.every().wednesday.at("15:00").do(scan_stocks)
-schedule.every().thursday.at("09:30").do(scan_stocks)
-schedule.every().thursday.at("15:00").do(scan_stocks)
-schedule.every().friday.at("09:30").do(scan_stocks)
-schedule.every().friday.at("15:00").do(scan_stocks)
+        # Set the headers
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
 
-while True:
-    schedule.run_pending()
-    time.sleep(60)  # Wait a minute before checking again
+        rsi_data = scan_stocks(nifty_100_stocks)
+        
+        # Send the response message
+        self.wfile.write(bytes("<html><body><h1>", rsi_data, "</h1></body></html>", "utf-8"))
 
+# Define the port to listen on (port 80)
+PORT = 80
 
+# Create a TCP server that listens on the specified port
+with socketserver.TCPServer(("", PORT), MyHttpRequestHandler) as httpd:
+    print(f"Serving on port {PORT}")
+    
+    scan_stocks()
+
+    # Schedule tasks
+    # schedule.every(10).seconds.do(scan_stocks)
+    schedule.every().monday.at("09:30").do(scan_stocks)
+    schedule.every().monday.at("15:00").do(scan_stocks)
+    schedule.every().tuesday.at("09:30").do(scan_stocks)
+    schedule.every().tuesday.at("15:00").do(scan_stocks)
+    schedule.every().wednesday.at("09:30").do(scan_stocks)
+    schedule.every().wednesday.at("15:00").do(scan_stocks)
+    schedule.every().thursday.at("09:30").do(scan_stocks)
+    schedule.every().thursday.at("15:00").do(scan_stocks)
+    schedule.every().friday.at("09:30").do(scan_stocks)
+    schedule.every().friday.at("15:00").do(scan_stocks)
+
+    while True:
+        schedule.run_pending()
+        # time.sleep(60)  # Wait a minute before checking again
+
+    # Keep the server running
+    httpd.serve_forever()
