@@ -1,6 +1,9 @@
 import schedule
 import time
 
+import os
+import json
+
 import yfinance as yf
 import ta
 import smtplib
@@ -10,6 +13,21 @@ from email.mime.base import MIMEBase
 from email import encoders
 import pandas as pd
 
+key = "gmailAppPassword"
+gmailAppPassword = os.getenv(key,"Environment Not found")
+json_file_path = "./.credentials.json"
+
+try:
+    with open(json_file_path, 'r') as file:
+        config = json.load(file)
+        gmailAppPassword = config.get(key)
+except FileNotFoundError:
+    print(f"Configuration file {json_file_path} not found.")
+except json.JSONDecodeError:
+    print(f"Error decoding JSON from the file {json_file_path}.")
+
+print(gmailAppPassword)
+
 # Function to calculate RSI
 def calculate_rsi(data, window=14):
     return ta.momentum.RSIIndicator(data['Close'], window=window).rsi()
@@ -18,7 +36,7 @@ def calculate_rsi(data, window=14):
 def send_email(stock):
     sender_email = "deepshah.workspace@gmail.com"
     receiver_email = "deepshah.workspace@gmail.com"
-    password = "gmail-app-password"
+    password = gmailAppPassword
 
     subject = f"Buy Alert: {stock}"
     body = f"Buy alert for {stock}: The weekly RSI(14) <= 40 and is greater than last week's RSI."
