@@ -28,6 +28,8 @@ key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
 scheduleSeconds = os.getenv("scheduleSeconds", 60)
 environment = os.getenv("environment", 'development')
+rsi = os.getenv("rsi", 40)
+
 json_file_path = "./.credentials.json"
 
 print(scheduleSeconds)
@@ -143,7 +145,7 @@ def scan_stocks():
 
         print( stock, " || Current RSI: ", current_rsi, " || Previous RSI: " , previous_rsi, "\n")
 
-        if current_rsi <= 40 and current_rsi > previous_rsi:
+        if current_rsi <= rsi and current_rsi > previous_rsi:
             alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
             print(alert_message)
             logging.info(alert_message)
