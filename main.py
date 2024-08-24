@@ -29,6 +29,7 @@ gmailAppPassword = os.getenv(key,"Environment Not found")
 reloadSeconds = int(os.getenv("reloadSeconds", 60))
 environment = os.getenv("environment", 'development')
 rsi = int(os.getenv("rsi", 40))
+scheduleScanStocks = os.getenv("scheduleScanStocks", "daily")
 
 json_file_path = "./.credentials.json"
 
@@ -473,18 +474,19 @@ def make_periodic_http_request():
         time.sleep(reloadSeconds)
 
 # Schedule tasks
-# schedule.every(int(2)).seconds.do(make_periodic_http_request)
-
-schedule.every().monday.at("09:30").do(scan_stocks)
-schedule.every().monday.at("15:00").do(scan_stocks)
-schedule.every().tuesday.at("09:30").do(scan_stocks)
-schedule.every().tuesday.at("15:00").do(scan_stocks)
-schedule.every().wednesday.at("09:30").do(scan_stocks)
-schedule.every().wednesday.at("15:00").do(scan_stocks)
-schedule.every().thursday.at("09:30").do(scan_stocks)
-schedule.every().thursday.at("15:00").do(scan_stocks)
-schedule.every().friday.at("09:30").do(scan_stocks)
-schedule.every().friday.at("15:00").do(scan_stocks)
+if scheduleScanStocks == "daily":
+    schedule.every().monday.at("09:30").do(scan_stocks)
+    schedule.every().monday.at("15:00").do(scan_stocks)
+    schedule.every().tuesday.at("09:30").do(scan_stocks)
+    schedule.every().tuesday.at("15:00").do(scan_stocks)
+    schedule.every().wednesday.at("09:30").do(scan_stocks)
+    schedule.every().wednesday.at("15:00").do(scan_stocks)
+    schedule.every().thursday.at("09:30").do(scan_stocks)
+    schedule.every().thursday.at("15:00").do(scan_stocks)
+    schedule.every().friday.at("09:30").do(scan_stocks)
+    schedule.every().friday.at("15:00").do(scan_stocks)
+else:
+    schedule.every(60).seconds.do(scan_stocks)
 
 # Function to handle the scheduled tasks
 def run_scheduled_tasks():
