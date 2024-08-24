@@ -26,6 +26,7 @@ logging.basicConfig(filename='stock_alerts.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
+seconds = os.getenv(scheduleSeconds, 60)
 json_file_path = "./.credentials.json"
 
 # Define the port to listen on (port 80)
@@ -460,17 +461,17 @@ def start_server():
 
 
 # Schedule tasks
-# schedule.every(10).seconds.do(scan_stocks)
-schedule.every().monday.at("09:30").do(scan_stocks)
-schedule.every().monday.at("15:00").do(scan_stocks)
-schedule.every().tuesday.at("09:30").do(scan_stocks)
-schedule.every().tuesday.at("15:00").do(scan_stocks)
-schedule.every().wednesday.at("09:30").do(scan_stocks)
-schedule.every().wednesday.at("15:00").do(scan_stocks)
-schedule.every().thursday.at("09:30").do(scan_stocks)
-schedule.every().thursday.at("15:00").do(scan_stocks)
-schedule.every().friday.at("09:30").do(scan_stocks)
-schedule.every().friday.at("15:00").do(scan_stocks)
+schedule.every(scheduleSeconds).seconds.do(scan_stocks)
+# schedule.every().monday.at("09:30").do(scan_stocks)
+# schedule.every().monday.at("15:00").do(scan_stocks)
+# schedule.every().tuesday.at("09:30").do(scan_stocks)
+# schedule.every().tuesday.at("15:00").do(scan_stocks)
+# schedule.every().wednesday.at("09:30").do(scan_stocks)
+# schedule.every().wednesday.at("15:00").do(scan_stocks)
+# schedule.every().thursday.at("09:30").do(scan_stocks)
+# schedule.every().thursday.at("15:00").do(scan_stocks)
+# schedule.every().friday.at("09:30").do(scan_stocks)
+# schedule.every().friday.at("15:00").do(scan_stocks)
 
 # Function to handle the scheduled tasks
 def run_scheduled_tasks():
