@@ -1,5 +1,5 @@
 import threading
-
+import requests
 import schedule
 import time
 import logging
@@ -27,6 +27,7 @@ logging.basicConfig(filename='stock_alerts.log',
 key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
 scheduleSeconds = os.getenv("scheduleSeconds", 60)
+environment = os.getenv("environment", 'development')
 json_file_path = "./.credentials.json"
 
 print(scheduleSeconds)
@@ -460,19 +461,29 @@ def start_server():
     print("Starting server at port ",PORT,"...")
     httpd.serve_forever()
 
+# Function to handle HTTP requests every second
+def make_periodic_http_request():
+    while True:
+        try:
+            response = requests.get("https://stock-buy-alert.adaptable.app/")
+            print(f"Received response: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print("------HTTP Request failed----------")
+        time.sleep(scheduleSeconds)
 
 # Schedule tasks
-schedule.every(int(scheduleSeconds)).seconds.do(scan_stocks)
-# schedule.every().monday.at("09:30").do(scan_stocks)
-# schedule.every().monday.at("15:00").do(scan_stocks)
-# schedule.every().tuesday.at("09:30").do(scan_stocks)
-# schedule.every().tuesday.at("15:00").do(scan_stocks)
-# schedule.every().wednesday.at("09:30").do(scan_stocks)
-# schedule.every().wednesday.at("15:00").do(scan_stocks)
-# schedule.every().thursday.at("09:30").do(scan_stocks)
-# schedule.every().thursday.at("15:00").do(scan_stocks)
-# schedule.every().friday.at("09:30").do(scan_stocks)
-# schedule.every().friday.at("15:00").do(scan_stocks)
+# schedule.every(int(2)).seconds.do(make_periodic_http_request)
+
+schedule.every().monday.at("09:30").do(scan_stocks)
+schedule.every().monday.at("15:00").do(scan_stocks)
+schedule.every().tuesday.at("09:30").do(scan_stocks)
+schedule.every().tuesday.at("15:00").do(scan_stocks)
+schedule.every().wednesday.at("09:30").do(scan_stocks)
+schedule.every().wednesday.at("15:00").do(scan_stocks)
+schedule.every().thursday.at("09:30").do(scan_stocks)
+schedule.every().thursday.at("15:00").do(scan_stocks)
+schedule.every().friday.at("09:30").do(scan_stocks)
+schedule.every().friday.at("15:00").do(scan_stocks)
 
 # Function to handle the scheduled tasks
 def run_scheduled_tasks():
@@ -480,17 +491,19 @@ def run_scheduled_tasks():
         schedule.run_pending()
         time.sleep(60)  # Wait a minute before checking again
 
-
 # Main
 if __name__ == "__main__":
+
     # Create and start threads
     server_thread = threading.Thread(target=start_server)
     scheduler_thread = threading.Thread(target=scan_stocks)
+    request_thread = threading.Thread(target=make_periodic_http_request)
     
     server_thread.start()
     scheduler_thread.start()
-    
-    # Wait for threads to complete
+    if environment == "production":
+        request_thread.start()
+
     server_thread.join()
     scheduler_thread.join()
-
+    request_thread.join()
