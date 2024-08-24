@@ -26,13 +26,12 @@ logging.basicConfig(filename='stock_alerts.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
-scheduleSeconds = int(os.getenv("scheduleSeconds", 60))
+reloadSeconds = int(os.getenv("reloadSeconds", 60))
 environment = os.getenv("environment", 'development')
 rsi = int(os.getenv("rsi", 40))
 
 json_file_path = "./.credentials.json"
 
-print(scheduleSeconds)
 # Define the port to listen on (port 80)
 PORT = 80
 
@@ -471,7 +470,7 @@ def make_periodic_http_request():
             print(f"Received response: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print("------HTTP Request failed----------")
-        time.sleep(scheduleSeconds)
+        time.sleep(reloadSeconds)
 
 # Schedule tasks
 # schedule.every(int(2)).seconds.do(make_periodic_http_request)
