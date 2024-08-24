@@ -29,6 +29,7 @@ gmailAppPassword = os.getenv(key,"Environment Not found")
 scheduleSeconds = os.getenv("scheduleSeconds", 60)
 json_file_path = "./.credentials.json"
 
+print(scheduleSeconds)
 # Define the port to listen on (port 80)
 PORT = 80
 
@@ -461,7 +462,7 @@ def start_server():
 
 
 # Schedule tasks
-schedule.every(scheduleSeconds).seconds.do(scan_stocks)
+schedule.every(int(scheduleSeconds)).seconds.do(scan_stocks)
 # schedule.every().monday.at("09:30").do(scan_stocks)
 # schedule.every().monday.at("15:00").do(scan_stocks)
 # schedule.every().tuesday.at("09:30").do(scan_stocks)
