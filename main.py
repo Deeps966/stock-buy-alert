@@ -495,7 +495,8 @@ def run_scheduled_tasks():
 
 # Main
 if __name__ == "__main__":
-
+    scan_stocks()
+    
     # Create and start threads
     server_thread = threading.Thread(target=start_server)
     scheduler_thread = threading.Thread(target=run_scheduled_tasks)
