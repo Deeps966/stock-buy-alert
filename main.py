@@ -26,7 +26,7 @@ logging.basicConfig(filename='stock_alerts.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 key = "gmailAppPassword"
 gmailAppPassword = os.getenv(key,"Environment Not found")
-seconds = os.getenv(scheduleSeconds, 60)
+scheduleSeconds = os.getenv(scheduleSeconds, 60)
 json_file_path = "./.credentials.json"
 
 # Define the port to listen on (port 80)
