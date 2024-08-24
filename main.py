@@ -3,6 +3,7 @@ import requests
 import schedule
 import time
 import logging
+import datetime
 
 import os
 import json
@@ -36,7 +37,9 @@ json_file_path = "./.credentials.json"
 # Define the port to listen on (port 80)
 PORT = 80
 
+# Initialize the alerts list
 alerts = []
+
 try:
     with open(json_file_path, 'r') as file:
         config = json.load(file)
@@ -50,8 +53,23 @@ print("Mail Creds: ", gmailAppPassword, " || Reload-Seconds: ", reloadSeconds, "
 
 # Function to add alert
 def add_alert(stock, current_rsi, previous_rsi):
+    current_time = datetime.datetime.now()
     alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
-    alerts.append(alert_message)
+
+    # Check if there's an existing alert for the same stock within the last 7 days
+    for alert in alerts:
+        if stock in alert['message']:
+            alert_time = alert['time']
+            if (current_time - alert_time).days < 7:
+                print(f"Alert for {stock} already exists within the last 7 days.")
+                return
+
+    logging.info(alert_message)
+    # send_email(stock)
+
+    # If no recent alert exists, add the new alert
+    alerts.append({'message': alert_message, 'time': current_time})
+    print(f"Alert added for {stock}")
 
 
 
@@ -145,11 +163,7 @@ def scan_stocks():
         print( stock, " || Current RSI: ", current_rsi, " || Previous RSI: " , previous_rsi, "\n")
 
         if current_rsi <= rsi and current_rsi > previous_rsi:
-            alert_message = f"Alert sent for {stock} to buy || Current RSI: {current_rsi} || Previous RSI: {previous_rsi}"
-            print(alert_message)
-            logging.info(alert_message)
             add_alert(stock, current_rsi, previous_rsi)
-            send_email(stock)
     return rsi_data
 
 # Define the HTTP request handler
@@ -298,7 +312,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 table_rows.append(row)
              
             # Convert alerts list to HTML table
-            alert_rows = [f"<tr><td>{alert}</td></tr>" for alert in alerts]
+            alert_rows = [f"<tr><td>{alert['message']}</td></tr>" for alert in alerts]
             
             combined_html = """
             <html>
@@ -486,6 +500,8 @@ if scheduleScanStocks == "daily":
     schedule.every().friday.at("15:00").do(scan_stocks)
 else:
     schedule.every(30).minutes.do(scan_stocks)
+
+# schedule.every(30).seconds.do(scan_stocks)
 
 # Function to handle the scheduled tasks
 def run_scheduled_tasks():
