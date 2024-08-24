@@ -24,8 +24,8 @@ logging.basicConfig(filename='stock_alerts.log',
                     level=logging.INFO, 
                     format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-key = "gmailAppPassword"
-gmailAppPassword = os.getenv(key,"Environment Not found")
+
+gmailAppPassword = os.getenv("gmailAppPassword","Environment Not found")
 reloadSeconds = int(os.getenv("reloadSeconds", 60))
 environment = os.getenv("environment", 'development')
 rsi = int(os.getenv("rsi", 40))
@@ -37,17 +37,16 @@ json_file_path = "./.credentials.json"
 PORT = 80
 
 alerts = []
-gmailAppPassword = ""
 try:
     with open(json_file_path, 'r') as file:
         config = json.load(file)
-        gmailAppPassword = config.get(key)
+        gmailAppPassword = config.get("gmailAppPassword")
 except FileNotFoundError:
     print(f"Configuration file {json_file_path} not found.")
 except json.JSONDecodeError:
     print(f"Error decoding JSON from the file {json_file_path}.")
 
-print("Mail Creds: ", gmailAppPassword)
+print("Mail Creds: ", gmailAppPassword, " || Reload-Seconds: ", reloadSeconds, " || Environment: ", environment, " || RSI: ", rsi, "Schedule-Scan-Stocks: ",scheduleScanStocks)
 
 # Function to add alert
 def add_alert(stock, current_rsi, previous_rsi):
@@ -486,7 +485,7 @@ if scheduleScanStocks == "daily":
     schedule.every().friday.at("09:30").do(scan_stocks)
     schedule.every().friday.at("15:00").do(scan_stocks)
 else:
-    schedule.every(60).seconds.do(scan_stocks)
+    schedule.every(30).minutes.do(scan_stocks)
 
 # Function to handle the scheduled tasks
 def run_scheduled_tasks():
@@ -499,7 +498,7 @@ if __name__ == "__main__":
 
     # Create and start threads
     server_thread = threading.Thread(target=start_server)
-    scheduler_thread = threading.Thread(target=scan_stocks)
+    scheduler_thread = threading.Thread(target=run_scheduled_tasks)
     request_thread = threading.Thread(target=make_periodic_http_request)
     
     server_thread.start()
