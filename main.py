@@ -520,7 +520,7 @@ if __name__ == "__main__":
     
     server_thread.start()
     scheduler_thread.start()
-    if environment != "production":
+    if environment == "production":
         request_thread.start()
 
     server_thread.join()
