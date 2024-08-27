@@ -35,7 +35,7 @@ scheduleScanStocks = int(os.getenv("scheduleScanStocks", 0))
 json_file_path = "./.credentials.json"
 
 # Define the port to listen on (port 80)
-PORT = 8080
+PORT = 80
 
 # Initialize the alerts list
 alerts = []
