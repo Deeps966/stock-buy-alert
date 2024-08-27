@@ -27,15 +27,15 @@ logging.basicConfig(filename='stock_alerts.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 gmailAppPassword = os.getenv("gmailAppPassword","Environment Not found")
-reloadSeconds = int(os.getenv("reloadSeconds", 60))
+reloadSeconds = int(os.getenv("reloadSeconds", 2))
 environment = os.getenv("environment", 'development')
 rsi = int(os.getenv("rsi", 40))
-scheduleScanStocks = os.getenv("scheduleScanStocks", "daily")
+scheduleScanStocks = os.getenv("scheduleScanStocks", 0)
 
 json_file_path = "./.credentials.json"
 
 # Define the port to listen on (port 80)
-PORT = 80
+PORT = 8080
 
 # Initialize the alerts list
 alerts = []
@@ -487,7 +487,7 @@ def make_periodic_http_request():
         time.sleep(reloadSeconds)
 
 # Schedule tasks
-if scheduleScanStocks == "daily":
+if scheduleScanStocks == 0:             #"daily":
     schedule.every().monday.at("09:30").do(scan_stocks)
     schedule.every().monday.at("15:00").do(scan_stocks)
     schedule.every().tuesday.at("09:30").do(scan_stocks)
@@ -499,7 +499,7 @@ if scheduleScanStocks == "daily":
     schedule.every().friday.at("09:30").do(scan_stocks)
     schedule.every().friday.at("15:00").do(scan_stocks)
 else:
-    schedule.every(2).minutes.do(scan_stocks)
+    schedule.every(scheduleScanStocks).minutes.do(scan_stocks)
 
 # schedule.every(30).seconds.do(scan_stocks)
 
@@ -520,7 +520,7 @@ if __name__ == "__main__":
     
     server_thread.start()
     scheduler_thread.start()
-    if environment == "production":
+    if environment != "production":
         request_thread.start()
 
     server_thread.join()
