@@ -30,7 +30,7 @@ gmailAppPassword = os.getenv("gmailAppPassword","Environment Not found")
 reloadSeconds = int(os.getenv("reloadSeconds", 2))
 environment = os.getenv("environment", 'development')
 rsi = int(os.getenv("rsi", 40))
-scheduleScanStocks = os.getenv("scheduleScanStocks", 0)
+scheduleScanStocks = int(os.getenv("scheduleScanStocks", 0))
 
 json_file_path = "./.credentials.json"
 
