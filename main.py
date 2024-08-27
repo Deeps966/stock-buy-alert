@@ -499,7 +499,7 @@ if scheduleScanStocks == "daily":
     schedule.every().friday.at("09:30").do(scan_stocks)
     schedule.every().friday.at("15:00").do(scan_stocks)
 else:
-    schedule.every(5).minutes.do(scan_stocks)
+    schedule.every(2).minutes.do(scan_stocks)
 
 # schedule.every(30).seconds.do(scan_stocks)
 
@@ -507,7 +507,7 @@ else:
 def run_scheduled_tasks():
     while True:
         schedule.run_pending()
-        time.sleep(60)  # Wait a minute before checking again
+        time.sleep(1)  # Wait a minute before checking again
 
 # Main
 if __name__ == "__main__":
