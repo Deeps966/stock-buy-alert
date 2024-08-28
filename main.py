@@ -516,13 +516,13 @@ if __name__ == "__main__":
     # Create and start threads
     server_thread = threading.Thread(target=start_server)
     scheduler_thread = threading.Thread(target=run_scheduled_tasks)
-    request_thread = threading.Thread(target=make_periodic_http_request)
+    # request_thread = threading.Thread(target=make_periodic_http_request)
     
     server_thread.start()
     scheduler_thread.start()
-    if environment == "production":
-        request_thread.start()
+   # if environment == "production":
+   #     request_thread.start()
 
     server_thread.join()
     scheduler_thread.join()
-    request_thread.join()
+    # request_thread.join()
