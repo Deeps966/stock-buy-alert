@@ -144,26 +144,29 @@ def scan_stocks():
 
     # #: Retrieve data at montly intervals.
     # MONTHLY = "1mo"
-    
-    for stock in nifty_100_stocks:
-        data = yf.download(stock+".NS", period="2y", interval="1wk")
+    try: 
+        for stock in nifty_100_stocks:
+            data = yf.download(stock+".NS", period="2y", interval="1wk")
 
-        if len(data) < 15:
-            continue
+            if len(data) < 15:
+                continue
 
-        data['RSI'] = calculate_rsi(data)
-        current_rsi = data['RSI'].iloc[-1]
-        previous_rsi = data['RSI'].iloc[-2]
+            data['RSI'] = calculate_rsi(data)
+            current_rsi = data['RSI'].iloc[-1]
+            previous_rsi = data['RSI'].iloc[-2]
 
-        rsi_data[stock] = {
-            "current_rsi": current_rsi,
-            "previous_rsi": previous_rsi
-        }
+            rsi_data[stock] = {
+                "current_rsi": current_rsi,
+                "previous_rsi": previous_rsi
+            }
 
-        print( stock, " || Current RSI: ", current_rsi, " || Previous RSI: " , previous_rsi, "\n")
+            print( stock, " || Current RSI: ", current_rsi, " || Previous RSI: " , previous_rsi, "\n")
 
-        if current_rsi <= rsi and current_rsi > previous_rsi:
-            add_alert(stock, current_rsi, previous_rsi)
+            if current_rsi <= rsi and current_rsi > previous_rsi:
+                add_alert(stock, current_rsi, previous_rsi)
+    except Exception as e:
+        print("Error while scanning stocks: ", e)
+        
     return rsi_data
 
 # Define the HTTP request handler
